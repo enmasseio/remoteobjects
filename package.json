@@ -1,0 +1,33 @@
+{
+  "name": "remoteobjects",
+  "version": "0.1.0",
+  "description": "Remote objects in a distributed peer-to-peer network",
+  "author": "Jos de Jong <wjosdejong@gmail.com>",
+  "contributors": [
+    {
+      "name": "Jos de Jong",
+      "email": "wjosdejong@gmail.com"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/josdejong/remoteobjects.git"
+  },
+  "keywords": [
+    "distributed",
+    "p2p",
+    "remote",
+    "object",
+    "host",
+    "proxy"
+  ],
+  "main": "./index",
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "test": "mocha test --recursive --reporter spec"
+  },
+  "engines": {
+    "node": "0.10.*"
+  }
+}
