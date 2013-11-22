@@ -18,7 +18,7 @@ describe('requestify', function() {
           requestify(client);
 
           client.onrequest = function onrequest (request, callback) {
-            callback(null, 'you said: ' + request);
+            callback(null, request);
           };
         });
 
@@ -34,13 +34,27 @@ describe('requestify', function() {
         }
       },
 
-      function () {
+      // send a string
+      function (callback) {
         client.request('hello there!', function (err, data) {
           assert.equal(err, null);
-          assert.equal(data, 'you said: hello there!');
-
-          done();
+          assert.equal(data, 'hello there!');
+          callback();
         });
+      },
+
+      // send a JSON object
+      function (callback) {
+        client.request({message: 'hello there!', id: 123}, function (err, data) {
+          assert.equal(err, null);
+          assert.deepEqual(data, {message: 'hello there!', id: 123});
+          callback();
+        });
+      },
+
+      // done
+      function () {
+        done();
       }
     ]);
 
