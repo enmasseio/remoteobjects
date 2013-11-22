@@ -1,6 +1,7 @@
 var assert = require('assert'),
     WebSocket = require('ws'),
-    ProxyServer = require('../lib/ProxyServer');
+    ProxyServer = require('../lib/ProxyServer'),
+    requestify = require('../lib/requestify');
 
 describe('proxyserver', function() {
 
@@ -19,12 +20,9 @@ describe('proxyserver', function() {
     var server = new ProxyServer();
     server.open();
 
-    var client1 = new WebSocket('ws://localhost:3000');
+    var client1 = requestify(new WebSocket('ws://localhost:3000'));
     client1.onopen = function() {
-      client1.send(JSON.stringify({
-        type: 'id',
-        id: 'client1'
-      }));
+      client1.request({ type: 'id', id: 'client1' });
     };
 
     // TODO: replace this timeout for a reliable test
@@ -37,25 +35,22 @@ describe('proxyserver', function() {
 
   });
 
-  it ('should send a message from one peer to another', function (done) {
+  it ('should send a request from one peer to another', function (done) {
     var MESSAGE = 'Hello Client1.';
     var server = new ProxyServer();
     server.open();
 
-    var client1 = new WebSocket('ws://localhost:3000');
+    var client1 = requestify(new WebSocket('ws://localhost:3000'));
     client1.onopen = function() {
-      client1.send(JSON.stringify({
-        type: 'id',
-        id: 'client1'
-      }));
+      client1.request({type: 'id', id: 'client1'});
     };
 
-    var client2 = new WebSocket('ws://localhost:3000');
+    var client2 = requestify(new WebSocket('ws://localhost:3000'));
     client2.onopen = function() {
-      client2.send(JSON.stringify({type: 'id', id: 'client2'}));
+      client2.request({type: 'id', id: 'client2'});
 
-      client2.onmessage = function (message) {
-        assert.equal(message.data, MESSAGE);
+      client2.onrequest = function (message) {
+        assert.deepEqual(message, MESSAGE);
 
         server.close();
         done();
@@ -64,12 +59,12 @@ describe('proxyserver', function() {
 
     // TODO: replace this timeout for a reliable test
     setTimeout(function () {
-      client1.send(JSON.stringify({
+      client1.request({
         type:'message',
         from: 'client1',
         to: 'client2',
         message: MESSAGE
-      }));
+      });
     }, 100);
   });
 

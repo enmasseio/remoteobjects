@@ -15,7 +15,7 @@ describe('requestify', function() {
         server = new ws.Server({port: port});
 
         server.on('connection', function(client) {
-          requestify(client);
+          client = requestify(client);
 
           client.onrequest = function onrequest (request, callback) {
             callback(null, request);
@@ -26,8 +26,7 @@ describe('requestify', function() {
       },
 
       function (callback) {
-        client = new WebSocket('ws://localhost:' + port);
-        requestify(client);
+        client = requestify(new WebSocket('ws://localhost:' + port));
 
         client.onopen = function () {
           callback();
