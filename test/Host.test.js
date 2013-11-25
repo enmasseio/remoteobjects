@@ -83,7 +83,7 @@ describe('host', function() {
   describe('local objects', function () {
     var host, object, id, proxy;
 
-    beforeEach(function (done) {
+    before(function (done) {
       // create a host
       host = new Host();
 
@@ -97,8 +97,8 @@ describe('host', function() {
       // add the object to the host
       id = host.add(object);
 
-      // get a proxy to the object
-      host.find(id, function (err, res) {
+      // create a proxy to the object
+      host.proxy(id, function (err, res) {
         proxy = res;
 
         done();
@@ -114,8 +114,8 @@ describe('host', function() {
       assert.ok(typeof proxy.add === 'function');
     });
 
-    it ('should find a proxy by its id', function (done) {
-      host.find(id, function (err, proxy2) {
+    it ('should create a proxy from an object id', function (done) {
+      host.proxy(id, function (err, proxy2) {
         assert.strictEqual(proxy2.id, id);
         assert.ok(typeof proxy2.add === 'function');
 
@@ -129,6 +129,8 @@ describe('host', function() {
         assert.strictEqual(result, 5);
       });
     });
+
+    // TODO: test removing a local object (with existing proxies)
 
   });
 
@@ -203,7 +205,23 @@ describe('host', function() {
       });
     });
 
-    it ('should invoke a local object', function (done) {
+    it ('should get the methods of a local object', function (done) {
+      host1.methods(addId, function (err, methods) {
+        assert.equal(err, null);
+        assert.deepEqual(methods, ['add']);
+        done();
+      });
+    });
+
+    it ('should get the methods of a remote object', function (done) {
+      host2.methods(addId, function (err, methods) {
+        assert.equal(err, null);
+        assert.deepEqual(methods, ['add']);
+        done();
+      });
+    });
+
+    it ('should invoke a local object with named parameters', function (done) {
       host1.invoke(addId, 'add', {a: 2, b: 4}, function (err, result) {
         assert.equal(err, null);
         assert.equal(result, 6);
@@ -211,8 +229,24 @@ describe('host', function() {
       });
     });
 
-    it ('should invoke a remote object', function (done) {
+    it ('should invoke a local object with unnamed parameters', function (done) {
+      host1.invoke(addId, 'add', [2, 4], function (err, result) {
+        assert.equal(err, null);
+        assert.equal(result, 6);
+        done();
+      });
+    });
+
+    it ('should invoke a remote object with named parameters', function (done) {
       host2.invoke(addId, 'add', {a: 2, b: 4}, function (err, result) {
+        assert.equal(err, null);
+        assert.equal(result, 6);
+        done();
+      });
+    });
+
+    it ('should invoke a remote object with unnamed parameters', function (done) {
+      host2.invoke(addId, 'add', [2, 4], function (err, result) {
         assert.equal(err, null);
         assert.equal(result, 6);
         done();
@@ -221,11 +255,49 @@ describe('host', function() {
 
     it ('should throw an error when invoking a non-existing object', function (done) {
       host2.invoke('xyz', 'add', {a: 2, b: 4}, function (err, result) {
-        assert.deepEqual(err, {code: 404, text: 'Object not found (id=xyz)'});
+        assert.deepEqual(err, {code: 404, text: 'Object not found'});
         assert.equal(result, null);
         done();
       });
     });
+
+    it ('should create a local proxy', function (done) {
+      host1.proxy(addId, function (err, proxy) {
+        assert.equal(err, null);
+        assert.equal(typeof proxy.add, 'function');
+        done();
+      });
+    });
+
+    it ('should create a remote proxy', function (done) {
+      host2.proxy(addId, function (err, proxy) {
+        assert.equal(err, null);
+        assert.equal(typeof proxy.add, 'function');
+        done();
+      });
+    });
+
+    it ('should invoke an object via a local proxy', function (done) {
+      host1.proxy(addId, function (err, proxy) {
+        proxy.add(2, 4, function (err, result) {
+          assert.equal(err, null);
+          assert.equal(result, 6);
+          done();
+        });
+      });
+    });
+
+    it ('should invoke an object via a remote proxy', function (done) {
+      host2.proxy(addId, function (err, proxy) {
+        proxy.add(2, 4, function (err, result) {
+          assert.equal(err, null);
+          assert.equal(result, 6);
+          done();
+        });
+      });
+    });
+
+    // TODO: test creating a remote proxy
 
     it ('should throw an error on invalid invocation', function (done) {
       async.parallel([
@@ -248,6 +320,10 @@ describe('host', function() {
           }
       ], done);
     });
+
+    // TODO: test removing a remote object (with existing proxies to this object)
+
+    // TODO: test removing a remote host (with existing proxies to this host)
 
   });
 

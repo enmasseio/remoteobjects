@@ -10,7 +10,7 @@ see the console...
 
 <script>
 // create a host
-var host = remoteobjects.host({id: 'host1'});
+var host = new remoteobjects.Host({id: 'host1'});
 
 // create an object
 var object = {
@@ -23,7 +23,7 @@ var object = {
 var id = host.add(object);
 
 // get a proxy to the object
-host.find(id, function (err, proxy) {
+host.proxy(id, function (err, proxy) {
   // invoke a function via the proxy
   proxy.add(2, 3, function (err, result) {
     console.log(err, result);
