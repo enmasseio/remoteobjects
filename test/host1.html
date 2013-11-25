@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>host1</title>
+
+  <style>
+    input.uuid {
+      width: 300px;
+      border: 1px solid lightgray;
+      padding: 3px;
+    }
+  </style>
+
+  <script src="../dist/remoteobjects.js"></script>
+
+</head>
+<body>
+
+<h1>host1</h1>
+
+<p>
+  First:
+</p>
+<ul>
+  <li>start a node.js proxy server: <code>../lib/server.js</code></li>
+</ul>
+
+
+<p id="info"></p>
+
+<script>
+  // create a host
+  var hostId = 'host1';
+  var host = new remoteobjects.Host({id: hostId});
+
+  // create an object
+  var objectId = 'object1';
+  var object = {
+    add: function (a, b, callback) {
+      if (a === undefined) {
+        callback({code: 400, text: 'Parameter a undefined'}, null);
+      }
+      else if (b === undefined) {
+        callback({code: 400, text: 'Parameter b undefined'}, null);
+      }
+      else {
+        callback(null, a + b);
+      }
+    }
+  };
+
+  // add the object to the host
+  host.add(objectId, object);
+
+  // connect to the default proxy server
+  host.connect(function () {
+    document.getElementById('info').innerHTML = '<p>connected</p>' +
+        'function <b>add</b> available on ' +
+        'host <b>' + hostId + '</b> on ' +
+        'object <b>' + objectId + '</b>';
+  });
+</script>
+
+</body>
+</html>

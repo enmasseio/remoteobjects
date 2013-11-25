@@ -80,54 +80,42 @@ describe('host', function() {
 
   // TODO: test with custom proxy server
 
-  describe('local objects', function () {
-    var host, object, id, proxy;
-
-    before(function (done) {
-      // create a host
-      host = new Host();
-
-      // create an object
-      object = {
-        add: function (a, b, callback) {
-          callback(null, a + b);
-        }
-      };
-
-      // add the object to the host
-      id = host.add(object);
-
-      // create a proxy to the object
-      host.proxy(id, function (err, res) {
-        proxy = res;
-
-        done();
-      });
-    });
-
+  describe('objects', function () {
     it ('should create a new host', function () {
+      // create a host
+      var host = new Host();
       assert.ok(host instanceof Host);
     });
 
     it ('should add an object to the host', function () {
-      assert.ok(isUuid(proxy.id));
-      assert.ok(typeof proxy.add === 'function');
+      var host = new Host();
+
+      // create an object
+      var object = {
+        add: function (a, b, callback) {
+          callback(null, a + b);
+        }
+      };
+      var id = host.add(object);      // add the object to the host
+
+      assert.ok(isUuid(id));
+      assert.strictEqual(host.objects[id], object); // TODO: not nice accessing objects like this
     });
 
-    it ('should create a proxy from an object id', function (done) {
-      host.proxy(id, function (err, proxy2) {
-        assert.strictEqual(proxy2.id, id);
-        assert.ok(typeof proxy2.add === 'function');
+    it ('should add an object with custom id to the host', function () {
+      var host = new Host();
 
-        done();
-      });
-    });
+      // create an object
+      var object = {
+        add: function (a, b, callback) {
+          callback(null, a + b);
+        }
+      };
+      var objectId = 'myObject';
+      var id = host.add(objectId, object);      // add the object to the host
 
-    it ('should execute a function via a proxy', function () {
-      proxy.add(2, 3, function (err, result) {
-        assert.strictEqual(err, null);
-        assert.strictEqual(result, 5);
-      });
+      assert.equal(id, objectId);
+      assert.strictEqual(host.objects[id], object); // TODO: not nice accessing objects like this
     });
 
     // TODO: test removing a local object (with existing proxies)

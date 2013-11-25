@@ -111,9 +111,9 @@ Host.prototype.connect = function connect(args) {
           }
         break;
     }
-
   };
 
+  // TODO: nicely handle problems with opening the socket
   socket.onopen = function() {
     // let the proxy server know my id
     socket.request({type: 'connect', id: me.id}, callback);
@@ -150,11 +150,19 @@ Host.prototype.disconnect = function disconnect(callback) {
  * An id of the added object is returned. The object can be accessed via its
  * proxy, which can be retrieved using the function host.get(id)
  *
+ * @param {String} [objectId]
  * @param {Object} object
  * @return {String} objectId
  */
-Host.prototype.add = function add (object) {
-  var objectId = uuid.v4(); // generate a new id
+Host.prototype.add = function add (objectId, object) {
+  if (arguments.length == 1) {
+    // add(object)
+    object = objectId;
+    objectId = uuid.v4(); // generate a new id
+  }
+  else {
+    // add(objectId, object)
+  }
 
   // register object
   this.objects[objectId] = object;

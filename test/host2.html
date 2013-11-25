@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>host2</title>
+  <script src="../dist/remoteobjects.js"></script>
+  <style>
+    input.uuid {
+      width: 300px;
+      border: 1px solid lightgray;
+      padding: 3px;
+    }
+    input.number {
+      width: 30px;
+      border: 1px solid lightgray;
+      padding: 3px;
+    }
+  </style>
+</head>
+<body>
+<h1>host2</h1>
+
+<p>
+  First:
+</p>
+<ul>
+  <li>start a node.js proxy server: <code>../lib/server.js</code></li>
+  <li>open the page <code>./host1.html</code> in a browser</li>
+</ul>
+
+<p id="info"></p>
+
+<p>
+  <input type="text" class="number" id="a" value="2" /> +
+  <input type="text" class="number" id="b" value="4" /> =
+  <input type="button" id="calculate" value="calculate">
+</p>
+
+<script>
+  // create a host
+  var hostId = 'host2';
+  var host = new remoteobjects.Host({id: hostId});
+  var proxy = null;
+
+  var objectId = 'object1';
+  var info = document.getElementById('info');
+  var create = document.getElementById('create');
+  var calculate = document.getElementById('calculate');
+  var a = document.getElementById('a');
+  var b = document.getElementById('b');
+
+  // connect to the default proxy server
+  host.connect(function () {
+    info.innerHTML += '<p>connected</p>';
+
+    // create a proxy to object1 located on host1
+    host.proxy(objectId, function (err, proxy) {
+      if (err) {
+        info.innerHTML += '<p>' + err + '</p>';
+      }
+      else {
+        window['proxy'] = proxy;
+        info.innerHTML += '<p>proxy to object <b>' + objectId + '</b> created</p>';
+      }
+    });
+
+  });
+
+  calculate.onclick = function () {
+    if (proxy) {
+      var aValue = parseFloat(a.value);
+      var bValue = parseFloat(b.value);
+      proxy.add(aValue, bValue, function (err, result) {
+        if (err) {
+          console.log(err);
+          info.innerHTML += '<p>' + 'Error: ' + err.toString() + '</p>';
+        }
+        else {
+          info.innerHTML += '<p>' + aValue + ' + ' + bValue + ' = ' + result + '</p>'
+        }
+      })
+    }
+    else {
+      var message = 'create a proxy first';
+      console.log(message);
+      alert(message);
+    }
+  }
+</script>
+
+</body>
+</html>
