@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>test remoteobjects</title>
+
+  <script src="../dist/remoteobjects.min.js"></script>
+</head>
+<body>
+see the console...
+
+<script>
+// create a host
+var host = remoteobjects.host({id: 'host1'});
+
+// create an object
+var object = {
+  add: function (a, b, callback) {
+    callback(null, a + b);
+  }
+};
+
+// add the object to the host
+var id = host.add(object);
+
+// get a proxy to the object
+host.find(id, function (err, proxy) {
+  // invoke a function via the proxy
+  proxy.add(2, 3, function (err, result) {
+    console.log(err, result);
+  })
+});
+
+
+</script>
+
+</body>
+</html>
