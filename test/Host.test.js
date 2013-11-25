@@ -144,7 +144,15 @@ describe('host', function() {
           // create an object
           object = {
             add: function (a, b, callback) {
-              callback(null, a + b);
+              if (a === undefined) {
+                callback({code: 400, text: 'Parameter a undefined'}, null);
+              }
+              else if (b === undefined) {
+                callback({code: 400, text: 'Parameter b undefined'}, null);
+              }
+              else {
+                callback(null, a + b);
+              }
             }
           };
 
@@ -170,6 +178,14 @@ describe('host', function() {
       ], callback);
     });
 
+    it ('should locate a local object', function (done) {
+      host1.locate(addId, function (err, host) {
+        assert.equal(err, null);
+        assert.equal(host, 'host1');
+        done();
+      });
+    });
+
     it ('should locate a remote object', function (done) {
       host2.locate(addId, function (err, host) {
         assert.equal(err, null);
@@ -178,13 +194,59 @@ describe('host', function() {
       });
     });
 
-    it ('should not find a non-existing remote object', function (done) {
+    it ('should not find a non-existing object', function (done) {
       var nonExistingId = 'xyz';
       host2.locate(nonExistingId, function (err, host) {
         assert.equal(err, null);
         assert.equal(host, null);
         done();
       });
+    });
+
+    it ('should invoke a local object', function (done) {
+      host1.invoke(addId, 'add', {a: 2, b: 4}, function (err, result) {
+        assert.equal(err, null);
+        assert.equal(result, 6);
+        done();
+      });
+    });
+
+    it ('should invoke a remote object', function (done) {
+      host2.invoke(addId, 'add', {a: 2, b: 4}, function (err, result) {
+        assert.equal(err, null);
+        assert.equal(result, 6);
+        done();
+      });
+    });
+
+    it ('should throw an error when invoking a non-existing object', function (done) {
+      host2.invoke('xyz', 'add', {a: 2, b: 4}, function (err, result) {
+        assert.deepEqual(err, {code: 404, text: 'Object not found (id=xyz)'});
+        assert.equal(result, null);
+        done();
+      });
+    });
+
+    it ('should throw an error on invalid invocation', function (done) {
+      async.parallel([
+          function (callback) {
+            // forget to define a
+            host2.invoke(addId, 'add', {b: 4}, function (err, result) {
+              assert.deepEqual(err, {code: 400, text: 'Parameter a undefined'});
+              assert.equal(result, null);
+              callback();
+            });
+          },
+
+          function (callback) {
+            // forget to define b
+            host2.invoke(addId, 'add', {a: 2}, function (err, result) {
+              assert.deepEqual(err, {code: 400, text: 'Parameter b undefined'});
+              assert.equal(result, null);
+              callback();
+            });
+          }
+      ], done);
     });
 
   });
