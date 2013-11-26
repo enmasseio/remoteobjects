@@ -97,7 +97,7 @@ describe('host', function() {
       assert.ok(host instanceof Host);
     });
 
-    it ('should add an object to the host', function () {
+    it ('should add an object to the host', function (done) {
       var host = new Host();
 
       // create an object
@@ -106,13 +106,15 @@ describe('host', function() {
           callback(null, a + b);
         }
       };
-      var id = host.add(object);      // add the object to the host
-
-      assert.ok(isUuid(id));
-      assert.strictEqual(host.objects[id], object); // TODO: not nice accessing objects like this
+      // add the object to the host
+      host.add(object, function (err, id) {
+        assert.ok(isUuid(id));
+        assert.strictEqual(host.objects[id], object); // TODO: not nice accessing objects like this
+        done();
+      });
     });
 
-    it ('should add an object with custom id to the host', function () {
+    it ('should add an object with custom id to the host', function (done) {
       var host = new Host();
 
       // create an object
@@ -121,11 +123,13 @@ describe('host', function() {
           callback(null, a + b);
         }
       };
+      // add the object to the host
       var objectId = 'myObject';
-      var id = host.add(objectId, object);      // add the object to the host
-
-      assert.equal(id, objectId);
-      assert.strictEqual(host.objects[id], object); // TODO: not nice accessing objects like this
+      host.add(objectId, object, function (err, id) {
+        assert.equal(id, objectId);
+        assert.strictEqual(host.objects[id], object); // TODO: not nice accessing objects like this
+        done();
+      });
     });
 
     // TODO: test removing a local object (with existing proxies)
@@ -139,25 +143,28 @@ describe('host', function() {
       async.series([
         function (callback) {
           host1 = new Host({id: 'host1'});
-          host1.connect(proxyServerUrl, callback);
+          host1.connect(proxyServerUrl, function () {
+            // create an object
+            object = {
+              add: function (a, b, callback) {
+                if (a === undefined) {
+                  callback({code: 400, text: 'Parameter a undefined'}, null);
+                }
+                else if (b === undefined) {
+                  callback({code: 400, text: 'Parameter b undefined'}, null);
+                }
+                else {
+                  callback(null, a + b);
+                }
+              }
+            };
 
-          // create an object
-          object = {
-            add: function (a, b, callback) {
-              if (a === undefined) {
-                callback({code: 400, text: 'Parameter a undefined'}, null);
-              }
-              else if (b === undefined) {
-                callback({code: 400, text: 'Parameter b undefined'}, null);
-              }
-              else {
-                callback(null, a + b);
-              }
-            }
-          };
-
-          // add the object to the host
-          addId = host1.add(object);
+            // add the object to the host
+            host1.add(object, function (error, id) {
+              addId = id;
+              callback();
+            });
+          });
         },
 
         function (callback) {
