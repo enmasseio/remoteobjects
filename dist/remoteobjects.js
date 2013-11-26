@@ -9,7 +9,8 @@ var _ = require('underscore'),
     WebSocket = require('./WebSocket'),
     requestify = require('./requestify');
 
-var PROXY_SERVER_URL = 'ws://localhost:3000';
+//var PROXY_SERVER_URL = 'ws://localhost:3000'; // TODO: cleanup
+var PROXY_SERVER_URL = 'ws://remoteobjects.herokuapp.com/';
 
 /**
  * Host
@@ -539,9 +540,23 @@ function _replace(object, newProperties) {
 // module exports
 module.exports = Host;
 
-},{"./WebSocket":4,"./requestify":6,"async":7,"node-uuid":22,"underscore":23}],3:[function(require,module,exports){
+},{"./WebSocket":3,"./requestify":6,"async":7,"node-uuid":22,"underscore":23}],3:[function(require,module,exports){
+if (typeof window !== 'undefined') {
+  // browser
+  if (window.WebSocket) {
+    module.exports = window.WebSocket;
+  }
+  else {
+    throw new Error('Your browser doesn\'t support WebSocket');
+  }
+} else {
+  // node.js
+  module.exports = require('ws');
+}
+
+},{"ws":24}],4:[function(require,module,exports){
 var WebSocketServer = require('ws').Server,
-    requestify = require('./requestify');
+    requestify = require('./../requestify');
 
 /**
  * A proxy server to pipe
@@ -559,80 +574,110 @@ var WebSocketServer = require('ws').Server,
  *     {"type":"list"}
  *     {"type":"message","from":"ID_FROM","to":"ID_TO","message":"TEXT_MESSAGE"}
  *
- * @param {Object} options.     Available options:
- *                              {Number} [port]  3000 by default
+ * @param {Object} config     Available configuration settings:
+ *                              {Object} [server] A server to attach to
+ *                              {boolean} [logging=false]
  */
-function ProxyServer (options) {
-  this.port = (options && options.port) ? parseFloat(options.port) : 3000;
+function ProxyServer (config) {
+  this.config = config || {};
   this.server = null;
   this.peers = {};
+
+  if (this.config.server) {
+    this.server = new WebSocketServer({server: this.config.server});
+    this._attachServer(this.server);
+  }
 }
 
 /**
- * Open the proxy server, start listening
+ * Open the proxy server, start listening on a port
+ * @param {Number} port
+ * @param {Function} [callback]
  */
-ProxyServer.prototype.open = function open () {
+ProxyServer.prototype.listen = function listen (port, callback) {
   if (!this.server) {
-    this.server = new WebSocketServer({port: this.port});
-
     var me = this;
+    this.server = new WebSocketServer({port: port}, function () {
+      me._attachServer(me.server);
 
-    this.server.on('connection', function(client) {
-      client = requestify(client);
-
-      client.onrequest = function(envelope, callback) {
-        switch (envelope.type) {
-          case 'connect':
-              // set the id for this client
-              var id = envelope.id;
-              if (!client.id) {
-                client.id = id;
-                me.peers[id] = client;
-              }
-              callback(null, 'connected');
-            break;
-
-          case 'disconnect':
-              delete me.peers[client.id];
-              callback(null, 'disconnected');
-            break;
-
-          // TODO: remove function list, instead create broadcast functionality
-          case 'list':
-              callback(null, me.list());
-            break;
-
-          case 'message':
-            // send the message to the addressed peer
-            var to = envelope.to;
-            var peer = me.peers[to];
-            if (peer) {
-              peer.request(envelope.message, callback);
-            }
-            else {
-              // peer not found
-              callback('Peer not found. (id = "' + to + '")', null);
-            }
-            break;
-
-          default:
-            // whoops
-            callback('Unknown message type "' + envelope.type + '"', null);
-            break;
-        }
-      };
-
-      client.on('close', function () {
-        delete me.peers[client.id];
-      });
+      if (callback) {
+        callback();
+      }
     });
   }
+  else {
+    throw new Error('ProxyServer is already attached to a server');
+  }
+};
+
+/**
+ * Initialize a websocket server: attach listeners for connections, requestify
+ * connections with clients.
+ * @param {WebSocketServer} server
+ * @private
+ */
+ProxyServer.prototype._attachServer = function _attachServer (server) {
+  var me = this;
+  server.on('connection', function(client) {
+    client = requestify(client);
+
+    client.onrequest = function(envelope, callback) {
+      switch (envelope.type) {
+        case 'connect':
+          // set the id for this client
+          var id = envelope.id;
+          if (!client.id) {
+            client.id = id;
+            me.peers[id] = client;
+          }
+          callback(null, 'connected');
+
+          if (me.config.logging) console.log('Client ' + client.id + ' connected');
+          break;
+
+        case 'disconnect':
+          delete me.peers[client.id];
+          callback(null, 'disconnected');
+
+          if (me.config.logging) console.log('Client ' + client.id + ' disconnected');
+          break;
+
+        // TODO: remove function list, instead create broadcast functionality
+        case 'list':
+          callback(null, me.list());
+          break;
+
+        case 'message':
+          // send the message to the addressed peer
+          var to = envelope.to;
+          var peer = me.peers[to];
+          if (peer) {
+            peer.request(envelope.message, callback);
+          }
+          else {
+            // peer not found
+            callback('Peer not found. (id = "' + to + '")', null);
+          }
+          break;
+
+        default:
+          // whoops
+          callback('Unknown message type "' + envelope.type + '"', null);
+          break;
+      }
+    };
+
+    client.on('close', function () {
+      delete me.peers[client.id];
+    });
+  });
 };
 
 /**
  * Close the proxy server, stop listening
  */
 ProxyServer.prototype.close = function close () {
+  // TODO: isn't close asynchronous and shouldn't it accept a callback function?
   if (this.server) {
     this.server.close();
     this.server = null;
@@ -650,25 +695,11 @@ ProxyServer.prototype.list = function list () {
 // module exports
 module.exports = ProxyServer;
 
-},{"./requestify":6,"ws":24}],4:[function(require,module,exports){
-if (typeof window !== 'undefined') {
-  // browser
-  if (window.WebSocket) {
-    module.exports = window.WebSocket;
-  }
-  else {
-    throw new Error('Your browser doesn\'t support WebSocket');
-  }
-} else {
-  // node.js
-  module.exports = require('ws');
-}
-
-},{"ws":24}],5:[function(require,module,exports){
-exports.ProxyServer = require('./ProxyServer');
+},{"./../requestify":6,"ws":24}],5:[function(require,module,exports){
+exports.ProxyServer = require('./proxyserver/ProxyServer');
 exports.Host = require('./Host');
 
-},{"./Host":2,"./ProxyServer":3}],6:[function(require,module,exports){
+},{"./Host":2,"./proxyserver/ProxyServer":4}],6:[function(require,module,exports){
 var uuid = require('node-uuid');
 
 var TIMEOUT = 60000; // ms

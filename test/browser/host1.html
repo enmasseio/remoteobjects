@@ -11,7 +11,7 @@
     }
   </style>
 
-  <script src="../dist/remoteobjects.js"></script>
+  <script src="../../dist/remoteobjects.js"></script>
 
 </head>
 <body>
@@ -45,6 +45,7 @@
   var objectId = 'object1';
   var object = {
     add: function (a, b, callback) {
+      console.log('add', a, b);
       if (a === undefined) {
         callback({code: 400, text: 'Parameter a undefined'}, null);
       }

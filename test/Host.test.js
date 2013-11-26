@@ -1,15 +1,25 @@
 var assert = require('assert'),
     async = require('async'),
-    ProxyServer = require('../lib/ProxyServer'),
+    portscanner = require('portscanner'),
+    ProxyServer = require('../lib/proxyserver/ProxyServer'),
     Host = require('../lib/Host');
 
 describe('host', function() {
   var proxyServer = null;
+  var proxyServerUrl = null;
 
   // start a proxy server
-  before(function () {
-    proxyServer = new ProxyServer();
-    proxyServer.open();
+  before(function (done) {
+    portscanner.findAPortNotInUse(3000, 3010, 'localhost', function(err, port) {
+      if (err) {
+        throw new Error('Could not find a free port');
+      }
+      else {
+        proxyServerUrl = 'ws://localhost:' + port;
+        proxyServer = new ProxyServer();
+        proxyServer.listen(port, done);
+      }
+    });
   });
 
   // stop a proxy server
@@ -30,7 +40,7 @@ describe('host', function() {
 
   it ('should connect and disconnect a host with proxy server', function (done) {
     var host = new Host();
-    host.connect(function () {
+    host.connect(proxyServerUrl, function () {
       assert.deepEqual(proxyServer.list(), [host.id]);
 
       host.disconnect(function (err, result) {
@@ -47,7 +57,7 @@ describe('host', function() {
     async.series([
       function (callback) {
         host1 = new Host();
-        host1.connect(function () {
+        host1.connect(proxyServerUrl, function () {
           assert.deepEqual(proxyServer.list(), [host1.id]);
           callback();
         });
@@ -55,7 +65,7 @@ describe('host', function() {
 
       function (callback) {
         host2 = new Host();
-        host2.connect(function () {
+        host2.connect(proxyServerUrl, function () {
           assert.deepEqual(proxyServer.list(), [host1.id, host2.id]);
           callback();
         });
@@ -129,7 +139,7 @@ describe('host', function() {
       async.series([
         function (callback) {
           host1 = new Host({id: 'host1'});
-          host1.connect(callback);
+          host1.connect(proxyServerUrl, callback);
 
           // create an object
           object = {
@@ -152,7 +162,7 @@ describe('host', function() {
 
         function (callback) {
           host2 = new Host({id: 'host2'});
-          host2.connect(callback);
+          host2.connect(proxyServerUrl, callback);
         }
       ], done);
     });
