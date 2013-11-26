@@ -1,1 +1,1 @@
-# web: node ./heroku/server.js
+web: node ./lib/proxyserver/app.js
