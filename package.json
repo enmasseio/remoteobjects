@@ -1,6 +1,6 @@
 {
   "name": "remoteobjects",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Remote objects in a distributed peer-to-peer network",
   "author": "Jos de Jong <wjosdejong@gmail.com>",
   "contributors": [
