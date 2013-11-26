@@ -9,7 +9,6 @@ var _ = require('underscore'),
     WebSocket = require('./WebSocket'),
     requestify = require('./requestify');
 
-//var PROXY_SERVER_URL = 'ws://localhost:3000'; // TODO: cleanup
 var PROXY_SERVER_URL = 'ws://remoteobjects.herokuapp.com/';
 
 /**
@@ -19,9 +18,6 @@ var PROXY_SERVER_URL = 'ws://remoteobjects.herokuapp.com/';
  *                            {String} [id]
  *                                A unique id for this host. If not provided,
  *                                a uuid is generated and used as id.
- *                            {String} [proxyServer]
- *                                Url for a custom proxy server.
- *                                client = new WebSocket('ws://localhost:' + port);
  * @constructor
  */
 function Host(options) {
@@ -153,22 +149,23 @@ Host.prototype.disconnect = function disconnect(callback) {
  *
  * @param {String} [objectId]
  * @param {Object} object
- * @return {String} objectId
+ * @param {Function} callback    Called as callback(error: Object, objectId: String)
  */
-Host.prototype.add = function add (objectId, object) {
-  if (arguments.length == 1) {
-    // add(object)
+Host.prototype.add = function add (objectId, object, callback) {
+  if (arguments.length == 2) {
+    // add(object, callback)
+    callback = object;
     object = objectId;
     objectId = uuid.v4(); // generate a new id
   }
   else {
-    // add(objectId, object)
+    // add(objectId, object, callback)
   }
 
   // register object
   this.objects[objectId] = object;
 
-  return objectId;
+  callback(null, objectId);
 };
 
 /**
@@ -429,9 +426,10 @@ Host.prototype._createRemoteProxy = function _createRemoteProxy (hostId, objectI
 
 /**
  * Remove an object from the host
- * @param objectId
+ * @param {String} objectId
+ * @param {Function} callback   Called as callback(error: Object)
  */
-Host.prototype.remove = function remove (objectId) {
+Host.prototype.remove = function remove (objectId, callback) {
   delete this.objects[objectId];
 
   var proxy = this.proxies[objectId];
@@ -445,6 +443,8 @@ Host.prototype.remove = function remove (objectId) {
 
     delete this.proxies[objectId];
   }
+
+  callback(null);
 };
 
 /**
@@ -559,7 +559,7 @@ var WebSocketServer = require('ws').Server,
     requestify = require('./../requestify');
 
 /**
- * A proxy server to pipe
+ * A proxy server to pipe requests from one host to another.
  *
  * This proxy server will become redundant as soon as the hosts can connect
  * to each other directly using WebRTC.
@@ -696,8 +696,75 @@ ProxyServer.prototype.list = function list () {
 module.exports = ProxyServer;
 
 },{"./../requestify":6,"ws":24}],5:[function(require,module,exports){
-exports.ProxyServer = require('./proxyserver/ProxyServer');
-exports.Host = require('./Host');
+var ProxyServer = require('./proxyserver/ProxyServer'),
+    Host = require('./Host');
+
+/**
+ * Add an object to the default host. The object can be called from a remote peer.
+ * An id of the added object is returned. The object can be accessed via its
+ * proxy, which can be retrieved using the function host.get(id)
+ *
+ * Usage:
+ *   add(object, callback)
+ *   add(objectId, object, callback)
+ *
+ * @param {String} [objectId]
+ * @param {Object} object
+ * @param {Function} callback   Called as callback(error: Object objectId: String)
+ */
+exports.add = function add (objectId, object, callback) {
+  var args = arguments;
+  _getGlobalHost(function (host) {
+    host.add.apply(host, args);
+  });
+};
+
+/**
+ * Remove an object from the default host
+ * @param {Object} objectId
+ * @param {Function} callback    Called as callback(error: Object)
+ */
+exports.remove = function remove (objectId, callback) {
+  _getGlobalHost(function (host) {
+    host.remove(objectId, callback);
+  });
+};
+
+/**
+ * Create an object proxy. Returns an empty proxy when object is not found.
+ * @param {String} objectId
+ * @param {Function} callback   Called as callback(error: Object, proxy: Object}
+ *
+ */
+exports.proxy = function proxy (objectId, callback) {
+  _getGlobalHost(function (host) {
+    host.proxy(objectId, callback)
+  });
+};
+
+
+exports.ProxyServer = ProxyServer;
+exports.Host = Host;
+
+
+/**
+ * Create a global host
+ * @param {Function} callback   Invoked as callback(host: Host)
+ * @private
+ */
+function _getGlobalHost (callback) {
+  if (!globalHost) {
+    globalHost = new Host();
+    globalHost.connect(function () {
+      callback(globalHost)
+    });
+  }
+  else {
+    callback(globalHost);
+  }
+}
+
+var globalHost = null;
 
 },{"./Host":2,"./proxyserver/ProxyServer":4}],6:[function(require,module,exports){
 var uuid = require('node-uuid');
