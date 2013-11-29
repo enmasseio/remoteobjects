@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>object1</title>
+  <script src="../dist/remoteobjects.js"></script>
+</head>
+<body>
+
+On this page, an object with id 'object1' is created and made available remotely.
+
+See the console.
+
+<script>
+  // create an object
+  var object = {
+    add: function (a, b, callback) {
+      console.log('add', a, b);
+      callback(null, a + b);
+    }
+  };
+
+  // make this object available remotely
+  var objectId = 'object1';
+  remoteobjects.add(objectId, object, function (err, objectId) {
+    if (err) {
+      console.log(err);
+    }
+    else {
+      console.log('object ' + objectId + ' added');
+    }
+  });
+</script>
+</body>
+</html>

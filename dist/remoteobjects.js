@@ -149,10 +149,10 @@ Host.prototype.disconnect = function disconnect(callback) {
  *
  * @param {String} [objectId]
  * @param {Object} object
- * @param {Function} callback    Called as callback(error: Object, objectId: String)
+ * @param {Function} [callback]   Called as callback(error: Object, objectId: String)
  */
 Host.prototype.add = function add (objectId, object, callback) {
-  if (arguments.length == 2) {
+  if (arguments.length == 2 && typeof arguments[1] === 'function') {
     // add(object, callback)
     callback = object;
     object = objectId;
@@ -165,7 +165,9 @@ Host.prototype.add = function add (objectId, object, callback) {
   // register object
   this.objects[objectId] = object;
 
-  callback(null, objectId);
+  if (callback) {
+    callback(null, objectId);
+  }
 };
 
 /**
