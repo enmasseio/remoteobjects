@@ -9,8 +9,6 @@ var _ = require('underscore'),
     WebSocket = require('./WebSocket'),
     requestify = require('./requestify');
 
-var PROXY_SERVER_URL = 'ws://remoteobjects.herokuapp.com/';
-
 /**
  * Host
  * Can host local and remote objects
@@ -36,31 +34,13 @@ function Host(options) {
 /**
  * Connect to a proxy server
  *
- * Usage:
- *   connect(callback);
- *   connect(url, callback);
- *
- * Where:
- *   {String} [url]        Url of the proxy server,
- *                              'ws://localhost:3000' by default.
- *   {function} [callback] Called after the Host is connected, called as
- *                         callback(err, result)
- *
- * @param {...} args
+ * @param {String} url          Url of the proxy server, for example
+ *                              'ws://localhost:3000'
+ * @param {function} [callback] Called after the Host is connected, called as
+ *                              callback(err, result)
  */
-Host.prototype.connect = function connect(args) {
+Host.prototype.connect = function connect(url, callback) {
   var me = this;
-
-  // parse arguments
-  var url, callback;
-  if (arguments.length < 2) {
-    url = PROXY_SERVER_URL;
-    callback = arguments[0];
-  }
-  else {
-    url = arguments[0];
-    callback = arguments[1];
-  }
 
   // disconnect first
   this.disconnect();
@@ -176,6 +156,7 @@ Host.prototype.add = function add (objectId, object, callback) {
  * @param {Function} callback   Called as callback(error: Object, proxy: Object}
  *
  */
+// TODO: implement meta functions for a proxy management: callbacks when a proxy is created, changed, removed
 Host.prototype.proxy = function proxy (objectId, callback) {
   var proxy, newProxy;
 
@@ -698,75 +679,8 @@ ProxyServer.prototype.list = function list () {
 module.exports = ProxyServer;
 
 },{"./../requestify":6,"ws":24}],5:[function(require,module,exports){
-var ProxyServer = require('./proxyserver/ProxyServer'),
-    Host = require('./Host');
-
-/**
- * Add an object to the default host. The object can be called from a remote peer.
- * An id of the added object is returned. The object can be accessed via its
- * proxy, which can be retrieved using the function host.get(id)
- *
- * Usage:
- *   add(object, callback)
- *   add(objectId, object, callback)
- *
- * @param {String} [objectId]
- * @param {Object} object
- * @param {Function} callback   Called as callback(error: Object objectId: String)
- */
-exports.add = function add (objectId, object, callback) {
-  var args = arguments;
-  _getGlobalHost(function (host) {
-    host.add.apply(host, args);
-  });
-};
-
-/**
- * Remove an object from the default host
- * @param {Object} objectId
- * @param {Function} callback    Called as callback(error: Object)
- */
-exports.remove = function remove (objectId, callback) {
-  _getGlobalHost(function (host) {
-    host.remove(objectId, callback);
-  });
-};
-
-/**
- * Create an object proxy. Returns an empty proxy when object is not found.
- * @param {String} objectId
- * @param {Function} callback   Called as callback(error: Object, proxy: Object}
- *
- */
-exports.proxy = function proxy (objectId, callback) {
-  _getGlobalHost(function (host) {
-    host.proxy(objectId, callback)
-  });
-};
-
-
-exports.ProxyServer = ProxyServer;
-exports.Host = Host;
-
-
-/**
- * Create a global host
- * @param {Function} callback   Invoked as callback(host: Host)
- * @private
- */
-function _getGlobalHost (callback) {
-  if (!globalHost) {
-    globalHost = new Host();
-    globalHost.connect(function () {
-      callback(globalHost)
-    });
-  }
-  else {
-    callback(globalHost);
-  }
-}
-
-var globalHost = null;
+exports.ProxyServer = require('./proxyserver/ProxyServer');
+exports.Host = require('./Host');
 
 },{"./Host":2,"./proxyserver/ProxyServer":4}],6:[function(require,module,exports){
 var uuid = require('node-uuid');

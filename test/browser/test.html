@@ -20,14 +20,14 @@ var object = {
 };
 
 // add the object to the host
-var id = host.add(object);
-
-// get a proxy to the object
-host.proxy(id, function (err, proxy) {
-  // invoke a function via the proxy
-  proxy.add(2, 3, function (err, result) {
-    console.log(err, result);
-  })
+host.add(object, function (err, id) {
+  // create a proxy to the object
+  host.proxy(id, function (err, proxy) {
+    // invoke a function via the proxy
+    proxy.add(2, 3, function (err, result) {
+      console.log(err, result);
+    })
+  });
 });
 
 </script>

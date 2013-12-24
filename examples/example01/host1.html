@@ -22,7 +22,7 @@
   First:
 </p>
 <ul>
-  <li>start a node.js proxy server: <code>../lib/server.js</code></li>
+  <li>start a proxy server: <code>node proxyserver.js</code></li>
 </ul>
 
 
@@ -37,12 +37,14 @@
 <p id="info"></p>
 
 <script>
+  var PROXY_SERVER_URL = 'ws://localhost:3000',
+      HOST_ID = 'host1',
+      OBJECT_ID = 'object1';
+
   // create a host
-  var hostId = 'host1';
-  var host = new remoteobjects.Host({id: hostId});
+  var host = new remoteobjects.Host({id: HOST_ID});
 
   // create an object
-  var objectId = 'object1';
   var object = {
     add: function (a, b, callback) {
       console.log('add', a, b);
@@ -59,14 +61,20 @@
   };
 
   // add the object to the host
-  host.add(objectId, object);
+  host.add(OBJECT_ID, object);
 
   // connect to the default proxy server
-  host.connect(function () {
-    document.getElementById('info').innerHTML = '<p>connected</p>' +
-        'function <b>add</b> available on ' +
-        'host <b>' + hostId + '</b> on ' +
-        'object <b>' + objectId + '</b>';
+  host.connect(PROXY_SERVER_URL, function (err) {
+    if (err) {
+      console.log(err);
+      document.getElementById('info').innerHTML = '<p>failed to connect to proxy server</p>';
+    }
+    else {
+      document.getElementById('info').innerHTML = '<p>connected</p>' +
+          'function <b>add</b> available on ' +
+          'host <b>' + HOST_ID + '</b> on ' +
+          'object <b>' + OBJECT_ID + '</b>';
+    }
   });
 </script>
 

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>object1</title>
+  <script src="../../dist/remoteobjects.js"></script>
+</head>
+<body>
+
+On this page, an object with id 'object1' is created and made available remotely.
+
+See the console.
+
+<script>
+  var PROXY_SERVER_URL = 'ws://localhost:3000',
+      OBJECT_ID = 'object1';
+
+  // create an object
+  var object = {
+    add: function (a, b, callback) {
+      console.log('add', a, b);
+      callback(null, a + b);
+    }
+  };
+
+  // create a host
+  var host = new remoteobjects.Host();
+
+  // connect to a proxy server
+  host.connect(PROXY_SERVER_URL, function (err) {
+    if (err) {
+      console.log('Error', err);
+    }
+    else {
+      console.log('Connected to proxy server');
+
+      // make the object remotely available
+      host.add(OBJECT_ID, object, function (err, objectId) {
+        if (err) {
+          console.log(err);
+        }
+        else {
+          console.log('Object ' + objectId + ' registered');
+        }
+      });
+    }
+  });
+
+</script>
+</body>
+</html>
