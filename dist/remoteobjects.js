@@ -96,6 +96,8 @@ Host.prototype.connect = function connect(url, callback) {
     socket.request({type: 'connect', id: me.id}, callback);
   };
 
+  // TODO: the host should register all its objects to the proxy server
+
   socket.onerror = function (err) {
     console.log(err);
   }
@@ -144,6 +146,8 @@ Host.prototype.add = function add (objectId, object, callback) {
 
   // register object
   this.objects[objectId] = object;
+
+  // TODO: this object should be registered to the proxy server
 
   if (callback) {
     callback(null, objectId);

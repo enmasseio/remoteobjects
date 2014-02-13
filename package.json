@@ -39,6 +39,7 @@
     "grunt-browserify": "~1.2.11"
   },
   "scripts": {
+    "build": "grunt",
     "test": "grunt test"
   },
   "engines": {
